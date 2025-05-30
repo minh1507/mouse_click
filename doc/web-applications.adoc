@@ -12,7 +12,9 @@ Hệ thống bao gồm hai ứng dụng web chính:
 1. *Website Thu thập* - Tích hợp thư viện JavaScript tracker để thu thập dữ liệu hành vi người dùng
 2. *Website Admin* - Dashboard quản trị và phân tích dữ liệu
 
-Cả hai ứng dụng đều được xây dựng bằng React và Shadcn UI để đảm bảo giao diện hiện đại, thống nhất và dễ sử dụng.
+Cả hai ứng dụng đều được xây dựng với:
+* *Frontend*: React và Shadcn UI để đảm bảo giao diện hiện đại, thống nhất và dễ sử dụng.
+* *Backend*: Python Django để cung cấp API, xử lý dữ liệu và quản lý cơ sở dữ liệu.
 
 == Công nghệ sử dụng
 
@@ -50,16 +52,30 @@ Cả hai ứng dụng đều được xây dựng bằng React và Shadcn UI đ�
 |Tailwind CSS
 |Framework CSS utility-first
 
-|Axios
-|Thư viện HTTP client
+|Python Django
+|Framework backend để xây dựng API và xử lý dữ liệu
 
-|Socket.io
-|WebSocket cho dữ liệu thời gian thực
+|Django REST Framework
+|Xây dựng RESTful API cho ứng dụng Django
+
+|Django Channels
+|Hỗ trợ WebSocket cho dữ liệu thời gian thực
+
+|Celery
+|Xử lý tác vụ bất đồng bộ và định thời
+
+|PostgreSQL
+|Hệ quản trị cơ sở dữ liệu quan hệ
+
+|Redis
+|Caching và message broker cho Celery
 |===
 
-== Website Thu thập
+== Frontend (React + Shadcn UI)
 
-=== Kiến trúc
+=== Website Thu thập
+
+==== Kiến trúc
 
 Website thu thập dữ liệu được thiết kế để tích hợp dễ dàng với thư viện mouse tracker. Kiến trúc của website được xây dựng theo mô hình component-based của React.
 
@@ -79,7 +95,7 @@ package "Website Thu thập" {
 @enduml
 ....
 
-=== Cấu trúc thư mục
+==== Cấu trúc thư mục
 
 [source]
 ----
@@ -102,7 +118,7 @@ src/
   └── types/              # Type definitions
 ----
 
-=== Tích hợp Mouse Tracker
+==== Tích hợp Mouse Tracker
 
 Thư viện Mouse Tracker được tích hợp vào website thông qua một React Provider, cho phép theo dõi hoạt động người dùng trên toàn bộ ứng dụng.
 
@@ -170,7 +186,7 @@ export const useTracker = () => {
 };
 ----
 
-=== Tính năng chính
+==== Tính năng chính
 
 1. *Tùy chỉnh theo dõi*: Khả năng bật/tắt các loại sự kiện theo dõi cụ thể
 2. *Dashboard mini*: Hiển thị dữ liệu thu thập thời gian thực trên website
@@ -179,9 +195,9 @@ export const useTracker = () => {
 5. *Gắn thẻ phiên (Session Tagging)*: Khả năng gắn thẻ và phân loại phiên người dùng
 6. *Quản lý mục tiêu (Goal Management)*: Theo dõi các mục tiêu chuyển đổi
 
-=== Giao diện người dùng
+==== Giao diện người dùng
 
-==== Banner Đồng ý Cookie
+===== Banner Đồng ý Cookie
 
 [source,tsx]
 ----
@@ -213,7 +229,7 @@ export const ConsentBanner = () => {
 };
 ----
 
-==== Trang cài đặt theo dõi
+===== Trang cài đặt theo dõi
 
 [source,tsx]
 ----
@@ -286,9 +302,9 @@ export default function TrackingSettingsPage() {
 }
 ----
 
-== Website Admin
+=== Website Admin
 
-=== Kiến trúc
+==== Kiến trúc
 
 Website Admin được thiết kế để hiển thị và phân tích dữ liệu hành vi người dùng từ hệ thống thu thập. Ứng dụng được xây dựng theo mô hình React + Shadcn UI với trọng tâm là khả năng mở rộng và hiệu suất cao.
 
@@ -309,7 +325,7 @@ package "Website Admin" {
 @enduml
 ....
 
-=== Cấu trúc thư mục
+==== Cấu trúc thư mục
 
 [source]
 ----
@@ -342,9 +358,9 @@ src/
   └── types/                  # Type definitions
 ----
 
-=== Tính năng phân tích nâng cao
+==== Tính năng phân tích nâng cao
 
-==== 1. Heatmap nâng cao
+===== 1. Heatmap nâng cao
 
 * *Heatmap tương tác*: Khả năng zoom, pan, và tương tác với heatmap
 * *Heatmap phân đoạn*: Tạo heatmap riêng cho từng phân đoạn người dùng
@@ -352,7 +368,7 @@ src/
 * *Heatmap thời gian thực*: Cập nhật liên tục với dữ liệu thời gian thực
 * *Heatmap theo thiết bị*: Phân tích riêng theo loại thiết bị, độ phân giải màn hình
 
-==== 2. Phân tích đường dẫn người dùng
+===== 2. Phân tích đường dẫn người dùng
 
 * *Biểu đồ Sankey*: Hiển thị luồng người dùng qua các trang
 * *Path Flow*: Trực quan hóa các đường dẫn phổ biến
@@ -360,7 +376,7 @@ src/
 * *Path Optimization*: Đề xuất tối ưu hóa dựa trên phân tích đường dẫn
 * *User Journey Mapping*: Bản đồ hành trình người dùng với các điểm tiếp xúc
 
-==== 3. Phân tích phiên
+===== 3. Phân tích phiên
 
 * *Session Replay*: Phát lại hành vi người dùng trong phiên
 * *Session Filtering*: Lọc phiên theo nhiều tiêu chí (thời gian, hành vi, trang...)
@@ -368,7 +384,7 @@ src/
 * *Error Detection*: Phát hiện lỗi trong phiên người dùng
 * *Behavior Patterns*: Nhận diện mẫu hành vi trong phiên
 
-==== 4. Phân tích Funnel
+===== 4. Phân tích Funnel
 
 * *Funnel Builder*: Tạo và tùy chỉnh funnel phân tích
 * *Multi-step Funnels*: Phân tích funnel nhiều bước
@@ -376,7 +392,7 @@ src/
 * *Conversion Optimization*: Đề xuất cải thiện tỷ lệ chuyển đổi
 * *Drop-off Analysis*: Phân tích điểm người dùng rời bỏ funnel
 
-==== 5. Phân tích phân đoạn
+===== 5. Phân tích phân đoạn
 
 * *Segment Builder*: Tạo phân đoạn người dùng dựa trên hành vi
 * *Behavioral Cohorts*: Phân tích theo nhóm hành vi
@@ -384,7 +400,7 @@ src/
 * *Predictive Segments*: Dự đoán phân đoạn dựa trên ML
 * *Segment Export*: Xuất phân đoạn để sử dụng trong các công cụ khác
 
-==== 6. Phân tích AI
+===== 6. Phân tích AI
 
 * *Anomaly Detection*: Phát hiện hành vi bất thường
 * *Behavior Prediction*: Dự đoán hành vi người dùng
@@ -392,9 +408,9 @@ src/
 * *Sentiment Analysis*: Phân tích cảm xúc từ hành vi
 * *Intent Prediction*: Dự đoán ý định người dùng
 
-=== Giao diện người dùng
+==== Giao diện người dùng
 
-==== Dashboard chính
+===== Dashboard chính
 
 [source,tsx]
 ----
@@ -536,214 +552,285 @@ export default function DashboardPage() {
 }
 ----
 
-==== Trang Heatmap
+== Backend API (Python Django)
 
-[source,tsx]
-----
-// src/app/heatmaps/page.tsx
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { HeatmapViewer } from "@/components/heatmaps/HeatmapViewer";
-import { HeatmapFilters } from "@/components/filters/HeatmapFilters";
+=== Kiến trúc
 
-export default function HeatmapsPage() {
-  return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Heatmaps</h1>
-        
-        <div className="flex gap-2">
-          <DateRangePicker />
-          <Button>Tạo mới</Button>
-        </div>
-      </div>
-      
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Lựa chọn trang</CardTitle>
-          <CardDescription>
-            Chọn trang web để xem heatmap
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn trang" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="home">Trang chủ</SelectItem>
-                  <SelectItem value="products">Trang sản phẩm</SelectItem>
-                  <SelectItem value="about">Giới thiệu</SelectItem>
-                  <SelectItem value="contact">Liên hệ</SelectItem>
-                  <SelectItem value="checkout">Thanh toán</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Thiết bị" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="desktop">Desktop</SelectItem>
-                  <SelectItem value="tablet">Tablet</SelectItem>
-                  <SelectItem value="mobile">Mobile</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <div className="grid gap-8 md:grid-cols-4">
-        <div className="md:col-span-1">
-          <HeatmapFilters />
-        </div>
-        
-        <div className="md:col-span-3">
-          <Tabs defaultValue="clicks">
-            <TabsList className="w-full">
-              <TabsTrigger value="clicks" className="flex-1">Click</TabsTrigger>
-              <TabsTrigger value="moves" className="flex-1">Di chuyển</TabsTrigger>
-              <TabsTrigger value="scroll" className="flex-1">Scroll</TabsTrigger>
-              <TabsTrigger value="attention" className="flex-1">Chú ý</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="clicks" className="mt-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <HeatmapViewer type="clicks" />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="moves" className="mt-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <HeatmapViewer type="moves" />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="scroll" className="mt-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <HeatmapViewer type="scroll" />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="attention" className="mt-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <HeatmapViewer type="attention" />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-    </div>
-  );
+Backend API được xây dựng trên Python Django và Django REST Framework, cung cấp các endpoint cần thiết cho cả website thu thập và website admin.
+
+[plantuml]
+....
+@startuml
+package "Django Backend" {
+  [Django Apps] --> [Models]
+  [Django Apps] --> [Views]
+  [Django Apps] --> [Serializers]
+  [Views] --> [Services]
+  [Services] --> [Models]
+  [Views] --> [Serializers]
+  [Serializers] --> [Models]
+  [Django Apps] --> [Celery Tasks]
+  [Celery Tasks] --> [Services]
+  [Django Channels] --> [WebSocket Consumers]
 }
+@enduml
+....
+
+=== Cấu trúc dự án
+
+[source]
+----
+backend/
+  ├── config/               # Cấu hình Django project
+  │   ├── settings/         # Các cài đặt cho môi trường khác nhau
+  │   ├── urls.py           # URL routing chính
+  │   └── asgi.py           # ASGI config cho WebSocket
+  ├── apps/                 # Django applications
+  │   ├── tracking/         # App quản lý dữ liệu theo dõi
+  │   ├── analytics/        # App xử lý phân tích
+  │   ├── accounts/         # App quản lý người dùng
+  │   ├── dashboard/        # App quản lý dashboard
+  │   └── api/              # App cung cấp API
+  ├── services/             # Business logic
+  │   ├── tracking/         # Dịch vụ xử lý dữ liệu theo dõi
+  │   ├── analytics/        # Dịch vụ phân tích
+  │   └── reporting/        # Dịch vụ tạo báo cáo
+  ├── utils/                # Các hàm tiện ích
+  ├── celery_app.py         # Cấu hình Celery
+  └── requirements/         # Dependency management
+      ├── base.txt          # Yêu cầu cơ bản
+      ├── dev.txt           # Yêu cầu môi trường phát triển
+      └── prod.txt          # Yêu cầu môi trường sản xuất
 ----
 
-==== Trang Phân tích Đường dẫn
+=== API Endpoints
 
-[source,tsx]
+[cols="2,4,1", options="header"]
+|===
+|Endpoint |Mô tả |Method
+
+|`/api/v1/tracking/events/`
+|Nhận dữ liệu sự kiện theo dõi từ tracker
+|POST
+
+|`/api/v1/tracking/sessions/`
+|Quản lý phiên người dùng
+|GET, POST
+
+|`/api/v1/analytics/heatmaps/`
+|Lấy dữ liệu heatmap
+|GET
+
+|`/api/v1/analytics/paths/`
+|Lấy dữ liệu phân tích đường dẫn
+|GET
+
+|`/api/v1/analytics/funnels/`
+|Quản lý và phân tích funnel
+|GET, POST, PUT
+
+|`/api/v1/analytics/segments/`
+|Quản lý phân đoạn người dùng
+|GET, POST, PUT
+
+|`/api/v1/dashboard/metrics/`
+|Lấy dữ liệu metric tổng quan
+|GET
+
+|`/api/v1/accounts/users/`
+|Quản lý người dùng
+|GET, POST, PUT
+
+|`/api/v1/accounts/teams/`
+|Quản lý nhóm người dùng
+|GET, POST, PUT
+|===
+
+=== Django Models
+
+[source,python]
 ----
-// src/app/path-analysis/page.tsx
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { PathFilters } from "@/components/filters/PathFilters";
-import { PathFlowDiagram } from "@/components/path-analysis/PathFlowDiagram";
-import { PathStatistics } from "@/components/path-analysis/PathStatistics";
-import { PathSequenceList } from "@/components/path-analysis/PathSequenceList";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+# apps/tracking/models.py
+from django.db import models
+from django.contrib.postgres.fields import JSONField
 
-export default function PathAnalysisPage() {
-  return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Phân tích đường dẫn</h1>
+class Session(models.Model):
+    session_id = models.UUIDField(primary_key=True)
+    user_agent = models.TextField()
+    ip_address = models.GenericIPAddressField()
+    referrer = models.URLField(null=True, blank=True)
+    start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"Session {self.session_id}"
+
+class Event(models.Model):
+    EVENT_TYPES = (
+        ('mouse_move', 'Mouse Move'),
+        ('mouse_click', 'Mouse Click'),
+        ('scroll', 'Scroll'),
+        ('form_input', 'Form Input'),
+        ('page_view', 'Page View'),
+        ('custom', 'Custom Event'),
+    )
+    
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='events')
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
+    timestamp = models.DateTimeField()
+    url = models.URLField()
+    data = JSONField()
+    
+    def __str__(self):
+        return f"{self.event_type} at {self.timestamp}"
+----
+
+=== Django REST Framework Serializers
+
+[source,python]
+----
+# apps/api/serializers.py
+from rest_framework import serializers
+from apps.tracking.models import Session, Event
+
+class EventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = ['id', 'session', 'event_type', 'timestamp', 'url', 'data']
+
+class SessionSerializer(serializers.ModelSerializer):
+    events_count = serializers.SerializerMethodField()
+    
+    def get_events_count(self, obj):
+        return obj.events.count()
+    
+    class Meta:
+        model = Session
+        fields = ['session_id', 'user_agent', 'ip_address', 'referrer', 
+                 'start_time', 'end_time', 'is_active', 'events_count']
+----
+
+=== Django Views
+
+[source,python]
+----
+# apps/api/views.py
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from apps.tracking.models import Session, Event
+from .serializers import SessionSerializer, EventSerializer
+from django.utils import timezone
+
+class EventViewSet(viewsets.ModelViewSet):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+    
+    def create(self, request, *args, **kwargs):
+        # Batch insert để tối ưu hiệu suất
+        if isinstance(request.data, list):
+            serializer = self.get_serializer(data=request.data, many=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            return Response(serializer.data, status=201)
+        return super().create(request, *args, **kwargs)
+
+class SessionViewSet(viewsets.ModelViewSet):
+    queryset = Session.objects.all()
+    serializer_class = SessionSerializer
+    
+    @action(detail=True, methods=['post'])
+    def end(self, request, pk=None):
+        session = self.get_object()
+        session.is_active = False
+        session.end_time = timezone.now()
+        session.save()
+        return Response({'status': 'session ended'})
+    
+    @action(detail=True, methods=['get'])
+    def events(self, request, pk=None):
+        session = self.get_object()
+        events = Event.objects.filter(session=session)
+        serializer = EventSerializer(events, many=True)
+        return Response(serializer.data)
+----
+
+=== Celery Tasks
+
+[source,python]
+----
+# apps/analytics/tasks.py
+from celery import shared_task
+from apps.tracking.models import Event
+from django.db.models import Count
+import pandas as pd
+import numpy as np
+
+@shared_task
+def generate_heatmap_data(url_pattern, start_date, end_date, event_type='mouse_click'):
+    """
+    Tạo dữ liệu heatmap từ các sự kiện click
+    """
+    events = Event.objects.filter(
+        url__regex=url_pattern,
+        timestamp__range=(start_date, end_date),
+        event_type=event_type
+    ).values('data')
+    
+    # Xử lý dữ liệu và tạo heatmap
+    data_points = []
+    for event in events:
+        if 'x' in event['data'] and 'y' in event['data']:
+            data_points.append((event['data']['x'], event['data']['y']))
+    
+    # Tạo ma trận mật độ
+    heatmap_data = np.zeros((1000, 1000))  # Giả sử kích thước 1000x1000
+    for x, y in data_points:
+        if 0 <= x < 1000 and 0 <= y < 1000:
+            heatmap_data[int(y)][int(x)] += 1
+    
+    return heatmap_data.tolist()
+
+@shared_task
+def analyze_user_paths(start_date, end_date, min_frequency=10):
+    """
+    Phân tích đường dẫn người dùng phổ biến
+    """
+    # Lấy tất cả các page view events
+    page_views = Event.objects.filter(
+        event_type='page_view',
+        timestamp__range=(start_date, end_date)
+    ).order_by('session', 'timestamp').values('session', 'url', 'timestamp')
+    
+    # Tạo dictionary lưu trữ đường dẫn theo session
+    paths_by_session = {}
+    for view in page_views:
+        session_id = view['session']
+        url = view['url']
         
-        <div className="flex gap-2">
-          <DateRangePicker />
-          <Button>Tạo báo cáo</Button>
-        </div>
-      </div>
-      
-      <div className="grid gap-8 md:grid-cols-4">
-        <div className="md:col-span-1">
-          <PathFilters />
-        </div>
+        if session_id not in paths_by_session:
+            paths_by_session[session_id] = []
         
-        <div className="md:col-span-3">
-          <Tabs defaultValue="flow">
-            <TabsList className="w-full">
-              <TabsTrigger value="flow" className="flex-1">Luồng</TabsTrigger>
-              <TabsTrigger value="sankey" className="flex-1">Sankey</TabsTrigger>
-              <TabsTrigger value="sequences" className="flex-1">Chuỗi</TabsTrigger>
-              <TabsTrigger value="stats" className="flex-1">Thống kê</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="flow" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Biểu đồ luồng đường dẫn</CardTitle>
-                  <CardDescription>
-                    Hiển thị luồng di chuyển phổ biến của người dùng
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PathFlowDiagram />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="sequences" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Chuỗi đường dẫn phổ biến</CardTitle>
-                  <CardDescription>
-                    Danh sách các chuỗi đường dẫn được sử dụng nhiều nhất
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PathSequenceList />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="stats" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Thống kê đường dẫn</CardTitle>
-                  <CardDescription>
-                    Phân tích chi tiết về các đường dẫn
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PathStatistics />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            {/* Nội dung tab Sankey */}
-          </Tabs>
-        </div>
-      </div>
-    </div>
-  );
-}
+        paths_by_session[session_id].append(url)
+    
+    # Đếm tần suất của các đường dẫn
+    path_frequencies = {}
+    for session_id, path in paths_by_session.items():
+        # Chuyển đổi list url thành tuple để có thể sử dụng làm key của dictionary
+        path_tuple = tuple(path)
+        if path_tuple in path_frequencies:
+            path_frequencies[path_tuple] += 1
+        else:
+            path_frequencies[path_tuple] = 1
+    
+    # Lọc các đường dẫn có tần suất lớn hơn ngưỡng
+    popular_paths = {path: freq for path, freq in path_frequencies.items() if freq >= min_frequency}
+    
+    # Định dạng kết quả
+    result = [{'path': list(path), 'frequency': freq} for path, freq in popular_paths.items()]
+    
+    return result
 ----
 
 == Phương pháp triển khai
@@ -760,15 +847,15 @@ export default function PathAnalysisPage() {
    - Phát triển trang và chức năng
    - Tích hợp với API
 
-3. *Tích hợp thư viện Mouse Tracker*
-   - Phát triển React Provider cho thư viện
-   - Tùy chỉnh cấu hình theo nhu cầu
-   - Kiểm thử hiệu suất
+3. *Phát triển Backend*
+   - Thiết kế database schema
+   - Xây dựng Django models và APIs
+   - Thiết lập Celery worker cho xử lý background
 
-4. *Phát triển tính năng phân tích*
-   - Phát triển các thuật toán phân tích
-   - Xây dựng các components trực quan hóa
-   - Tối ưu hóa hiệu suất xử lý
+4. *Tích hợp và Testing*
+   - Tích hợp frontend và backend
+   - Unit testing cho từng thành phần
+   - End-to-end testing cho toàn bộ hệ thống
 
 === Quản lý phiên bản
 
@@ -781,9 +868,9 @@ Hệ thống được phát triển theo mô hình Trunk-based development với
 
 === Testing
 
-* *Unit Testing*: Jest + React Testing Library
-* *Integration Testing*: Cypress
-* *Performance Testing*: Lighthouse và custom scripts
+* *Unit Testing*: Jest (frontend), pytest (backend)
+* *Integration Testing*: Cypress, Django TestCase
+* *Performance Testing*: Lighthouse và locust
 * *A11y Testing*: axe-core
 
 == Kế hoạch phát triển tương lai
@@ -791,6 +878,7 @@ Hệ thống được phát triển theo mô hình Trunk-based development với
 === Giai đoạn 1: MVP (2-3 tháng)
 
 * Website thu thập cơ bản với tích hợp Mouse Tracker
+* Django API cơ bản cho lưu trữ và truy xuất dữ liệu
 * Dashboard admin với các tính năng phân tích cơ bản
 * Heatmap và phân tích phiên
 * Quản lý người dùng và phân quyền
@@ -802,9 +890,11 @@ Hệ thống được phát triển theo mô hình Trunk-based development với
 * Phân đoạn người dùng
 * A/B Testing tích hợp
 * Report tự động
+* Tối ưu hóa hiệu suất Django với caching
 
 === Giai đoạn 3: AI và tự động hóa (4-6 tháng)
 
+* Tích hợp Django với thư viện ML (scikit-learn, TensorFlow)
 * Phân tích AI
 * Anomaly detection
 * Đề xuất tối ưu hóa tự động
