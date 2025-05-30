@@ -1,0 +1,309 @@
+= JavaScript Mouse Tracker: Đặc tả kỹ thuật
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:source-highlighter: highlightjs
+
+== Tổng quan
+
+Mouse Tracker là thư viện JavaScript được thiết kế để theo dõi tương tác của người dùng trên trang web thông qua các sự kiện chuột. Thư viện này thu thập dữ liệu hành vi người dùng và gửi đến hệ thống phân tích để xử lý và trực quan hóa.
+
+== Yêu cầu chức năng
+
+=== Sự kiện theo dõi
+
+Thư viện theo dõi các loại sự kiện sau:
+
+* *Di chuyển chuột* (`mouse_move`): Vị trí chuột (x, y) theo thời gian
+* *Click chuột* (`mouse_click`): Vị trí click, phần tử được click, loại click
+* *Hover chuột* (`mouse_hover`): Phần tử được hover, thời gian hover
+* *Scroll* (`scroll`): Vị trí scroll theo thời gian
+* *Thay đổi kích thước viewport* (`viewport_resize`): Kích thước mới của viewport
+* *Bắt đầu phiên* (`session_start`): Thông tin khi người dùng bắt đầu phiên
+* *Kết thúc phiên* (`session_end`): Thông tin khi người dùng kết thúc phiên
+
+=== Xử lý dữ liệu
+
+* *Throttling*: Giới hạn số lượng sự kiện (mặc định 100ms cho di chuyển chuột)
+* *Batching*: Gom nhóm sự kiện để giảm số lượng request (mặc định 50 sự kiện/batch)
+* *Offline storage*: Lưu trữ dữ liệu khi mất kết nối sử dụng localStorage
+* *Độ ưu tiên sự kiện*: Ưu tiên gửi sự kiện quan trọng (clicks) qua WebSocket
+
+=== Giao tiếp với server
+
+* *REST API*: Gửi batch dữ liệu theo định kỳ
+* *WebSocket*: Gửi dữ liệu thời gian thực cho các sự kiện quan trọng
+
+== Cấu trúc dữ liệu
+
+=== Sự kiện
+
+[source,asciidoc]
+----
+{
+  "type": "mouse_move|mouse_click|scroll|...",
+  "timestamp": 1629884130000,
+  "url": "https://example.com/page",
+  "sessionId": "uuid-session-id",
+  "data": {
+    // Dữ liệu riêng cho từng loại sự kiện
+  }
+}
+----
+
+=== Dữ liệu sự kiện di chuyển chuột
+
+[source,asciidoc]
+----
+{
+  "x": 100,            // Vị trí X tương đối so với viewport
+  "y": 200,            // Vị trí Y tương đối so với viewport
+  "pageX": 100,        // Vị trí X tuyệt đối trên trang
+  "pageY": 200,        // Vị trí Y tuyệt đối trên trang
+  "relativeX": 0.1,    // Tỷ lệ X (0-1) so với chiều rộng viewport
+  "relativeY": 0.2     // Tỷ lệ Y (0-1) so với chiều cao viewport
+}
+----
+
+=== Dữ liệu sự kiện click chuột
+
+[source,asciidoc]
+----
+{
+  "x": 100,            // Vị trí X
+  "y": 200,            // Vị trí Y
+  "pageX": 100,        // Vị trí X tuyệt đối
+  "pageY": 200,        // Vị trí Y tuyệt đối
+  "relativeX": 0.1,    // Tỷ lệ X (0-1)
+  "relativeY": 0.2,    // Tỷ lệ Y (0-1)
+  "button": 0,         // Nút chuột (0: trái, 1: giữa, 2: phải)
+  "element": {         // Thông tin về phần tử được click
+    "tag": "button",
+    "id": "submit-btn",
+    "class": "btn btn-primary",
+    "text": "Submit",
+    "path": "body > div > form > button",
+    "attributes": {
+      "href": null,
+      "src": null,
+      "alt": null,
+      "title": "Submit Form"
+    }
+  }
+}
+----
+
+=== Dữ liệu sự kiện scroll
+
+[source,asciidoc]
+----
+{
+  "scrollX": 0,            // Vị trí scroll theo chiều ngang
+  "scrollY": 500,          // Vị trí scroll theo chiều dọc
+  "maxScrollX": 0,         // Giá trị scroll X tối đa
+  "maxScrollY": 2000,      // Giá trị scroll Y tối đa
+  "relativeScrollX": 0,    // Tỷ lệ scroll X (0-1)
+  "relativeScrollY": 0.25  // Tỷ lệ scroll Y (0-1)
+}
+----
+
+=== Batch dữ liệu
+
+[source,asciidoc]
+----
+{
+  "sessionId": "uuid-session-id",
+  "events": [
+    // Mảng các sự kiện
+  ],
+  "metadata": {
+    "userAgent": "Mozilla/5.0...",
+    "language": "vi-VN",
+    "screenWidth": 1920,
+    "screenHeight": 1080,
+    "timestamp": 1629884130000
+  }
+}
+----
+
+== Cấu hình
+
+[cols="1,1,3", options="header"]
+|===
+|Tùy chọn |Giá trị mặc định |Mô tả
+
+|apiEndpoint
+|'/api/v1/track'
+|Endpoint API để gửi dữ liệu batch
+
+|websocketEndpoint
+|null
+|Endpoint WebSocket cho dữ liệu thời gian thực
+
+|throttleInterval
+|100
+|Khoảng thời gian throttle (ms)
+
+|batchSize
+|50
+|Số lượng sự kiện tối đa trong một batch
+
+|batchInterval
+|2000
+|Khoảng thời gian gửi batch (ms)
+
+|enableHeatmap
+|true
+|Bật/tắt theo dõi di chuyển chuột
+
+|enableClickTracking
+|true
+|Bật/tắt theo dõi click chuột
+
+|enableScrollTracking
+|true
+|Bật/tắt theo dõi scroll
+|===
+
+== Sử dụng cơ bản
+
+=== Cài đặt
+
+[source,html]
+----
+<script src="mouse-tracker.min.js"></script>
+----
+
+=== Khởi tạo
+
+[source,javascript]
+----
+const tracker = new MouseTracker({
+  apiEndpoint: 'https://api.example.com/track',
+  websocketEndpoint: 'wss://api.example.com/stream',
+  throttleInterval: 100,
+  batchSize: 50,
+  batchInterval: 2000
+});
+
+// Bắt đầu theo dõi
+tracker.start();
+
+// Dừng theo dõi
+// tracker.stop();
+----
+
+=== Tích hợp với React
+
+[source,javascript]
+----
+import MouseTracker from 'mouse-tracker';
+
+function App() {
+  useEffect(() => {
+    const tracker = new MouseTracker({
+      apiEndpoint: 'https://api.example.com/track'
+    });
+    
+    tracker.start();
+    
+    return () => {
+      tracker.stop();
+    };
+  }, []);
+  
+  return (
+    <div className="app">
+      {/* Nội dung ứng dụng */}
+    </div>
+  );
+}
+----
+
+== Quy trình xử lý
+
+[plantuml]
+----
+@startuml
+start
+:Người dùng tương tác với trang web;
+:JavaScript Tracker bắt sự kiện chuột;
+
+if (Throttling?) then (yes)
+  :Kiểm tra thời gian từ sự kiện cuối;
+  if (Đủ thời gian?) then (yes)
+    :Xử lý sự kiện;
+  else (no)
+    :Bỏ qua sự kiện;
+    stop
+  endif
+else (no)
+  :Xử lý sự kiện;
+endif
+
+:Thêm sự kiện vào buffer;
+
+if (WebSocket & Sự kiện quan trọng?) then (yes)
+  :Gửi qua WebSocket;
+endif
+
+if (Buffer đầy?) then (yes)
+  :Tạo batch;
+  :Lưu vào localStorage;
+  :Gửi lên server qua API;
+  
+  if (Gửi thành công?) then (yes)
+    :Xóa khỏi localStorage;
+  else (no)
+    :Giữ trong localStorage;
+  endif
+endif
+
+stop
+@enduml
+----
+
+== Xử lý ngoại lệ
+
+=== Mất kết nối
+
+Khi mất kết nối, thư viện sẽ:
+
+1. Tiếp tục thu thập dữ liệu
+2. Lưu trữ trong localStorage
+3. Định kỳ kiểm tra kết nối
+4. Gửi dữ liệu khi có kết nối trở lại
+
+=== Xử lý lỗi
+
+* Khi localStorage đầy: Xóa dữ liệu cũ nhất
+* Khi WebSocket bị ngắt kết nối: Tự động kết nối lại sau 5 giây
+* Khi gửi batch thất bại: Lưu trữ và thử lại sau
+
+== Tối ưu hóa hiệu suất
+
+=== Giảm thiểu tác động đến trải nghiệm người dùng
+
+* Tất cả xử lý diễn ra ở background thread khi có thể
+* Sử dụng throttling cho sự kiện có tần suất cao
+* Ưu tiên các tác vụ quan trọng của người dùng
+
+=== Tối ưu bộ nhớ
+
+* Giới hạn kích thước buffer
+* Giới hạn độ sâu phân tích DOM
+* Tự động dọn dẹp dữ liệu không sử dụng
+
+=== Tối ưu mạng
+
+* Batching các request
+* Nén dữ liệu
+* Gửi dữ liệu khi người dùng không tương tác
+
+== Bảo mật và quyền riêng tư
+
+* Không thu thập dữ liệu nhạy cảm như nội dung input
+* Hỗ trợ lọc phần tử (loại trừ các phần tử chứa thông tin nhạy cảm)
+* Tuân thủ Do Not Track (DNT)
+* Xử lý đồng ý cookie theo GDPR 

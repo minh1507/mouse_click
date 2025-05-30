@@ -1,0 +1,373 @@
+= Các bước triển khai chi tiết
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+
+== Giai đoạn 1: Lập kế hoạch và thiết kế (2-3 tuần)
+
+=== Tuần 1: Phân tích yêu cầu
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Xác định các chức năng cần thiết
+a|* Liệt kê các sự kiện chuột cần theo dõi
+* Xác định các biểu đồ và báo cáo cần thiết
+* Xác định KPIs của hệ thống
+
+|Đánh giá khối lượng dữ liệu
+a|* Ước tính số lượng người dùng
+* Ước tính khối lượng dữ liệu hàng ngày
+* Tính toán yêu cầu lưu trữ
+
+|Nghiên cứu công nghệ
+a|* Đánh giá các công nghệ phù hợp
+* So sánh các giải pháp hiện có
+* Chọn stack công nghệ phù hợp
+|===
+
+=== Tuần 2-3: Thiết kế hệ thống
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Thiết kế kiến trúc
+a|* Xây dựng kiến trúc tổng thể
+* Thiết kế các microservice
+* Xác định giao tiếp giữa các thành phần
+
+|Thiết kế dữ liệu
+a|* Thiết kế schema MongoDB
+* Thiết kế mapping Elasticsearch
+* Thiết kế HDFS directory structure
+
+|Thiết kế API
+a|* Xác định các endpoint
+* Thiết kế format request/response
+* Xây dựng tài liệu API
+
+|Thiết kế UI/UX cho dashboard
+a|* Wireframe các màn hình dashboard
+* Thiết kế luồng người dùng
+* Thiết kế các biểu đồ và báo cáo
+|===
+
+== Giai đoạn 2: Phát triển cơ sở hạ tầng (3-4 tuần)
+
+=== Tuần 4-5: Thiết lập môi trường
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Chuẩn bị máy chủ
+a|* Cấu hình máy chủ phát triển
+* Cấu hình máy chủ staging
+* Chuẩn bị môi trường sản xuất
+
+|Cài đặt và cấu hình hệ thống Big Data
+a|* Cài đặt Hadoop cluster (tối thiểu 3 node)
+* Cấu hình HDFS
+* Cài đặt và cấu hình Spark
+* Thiết lập Spark Streaming
+
+|Cài đặt hệ thống lưu trữ
+a|* Thiết lập MongoDB cluster
+* Cài đặt Elasticsearch
+* Cài đặt Kafka và Zookeeper
+|===
+
+=== Tuần 6-7: Triển khai cơ sở hạ tầng DevOps
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Thiết lập CI/CD
+a|* Cấu hình Jenkins/GitLab CI
+* Thiết lập quy trình deployment
+* Cấu hình môi trường test tự động
+
+|Thiết lập giám sát
+a|* Cài đặt Prometheus
+* Cấu hình Grafana
+* Thiết lập cảnh báo
+
+|Thiết lập bảo mật
+a|* Cấu hình firewall
+* Thiết lập VPN
+* Cấu hình SSL/TLS
+* Thiết lập backup và disaster recovery
+|===
+
+== Giai đoạn 3: Phát triển backend (4-5 tuần)
+
+=== Tuần 8-9: Phát triển dịch vụ thu thập dữ liệu
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Phát triển API endpoints
+a|* Xây dựng REST API cho batch data
+* Triển khai WebSocket cho real-time data
+* Triển khai authentication và authorization
+
+|Phát triển xử lý dữ liệu
+a|* Triển khai validation
+* Xây dựng logic xử lý event
+* Tích hợp với Kafka
+|===
+
+=== Tuần 10-12: Phát triển pipeline xử lý dữ liệu
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Xây dựng Spark Streaming jobs
+a|* Xây dựng job xử lý real-time
+* Triển khai logic phát hiện bất thường
+* Cập nhật dữ liệu vào MongoDB
+
+|Xây dựng Spark batch jobs
+a|* Xây dựng ETL pipeline
+* Triển khai aggregation jobs
+* Xây dựng data mart cho báo cáo
+
+|Phát triển các model ML
+a|* Xây dựng feature extraction
+* Triển khai K-means clustering
+* Xây dựng mô hình dự đoán
+* Triển khai path analysis
+|===
+
+== Giai đoạn 4: Phát triển frontend (3-4 tuần)
+
+=== Tuần 13-14: Phát triển JavaScript Tracker
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Xây dựng core library
+a|* Triển khai event listeners
+* Xây dựng logic buffer và batch
+* Triển khai offline storage
+
+|Tối ưu hóa performance
+a|* Triển khai throttling
+* Tối ưu kích thước payload
+* Tối ưu memory usage
+
+|Xây dựng SDK cho các framework phổ biến
+a|* SDK cho React
+* SDK cho Angular
+* SDK cho Vue.js
+|===
+
+=== Tuần 15-16: Phát triển Dashboard
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Xây dựng UI framework
+a|* Thiết lập React project
+* Xây dựng các component cơ bản
+* Triển khai authentication UI
+
+|Phát triển các visualization
+a|* Xây dựng heatmap component
+* Phát triển path analysis visualization
+* Triển khai funnel visualization
+* Xây dựng session replay
+
+|Phát triển các báo cáo
+a|* Xây dựng dashboard tổng quan
+* Phát triển báo cáo theo phân khúc
+* Triển khai báo cáo so sánh
+|===
+
+== Giai đoạn 5: Kiểm thử và tối ưu hóa (3-4 tuần)
+
+=== Tuần 17-18: Kiểm thử
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Kiểm thử đơn vị
+a|* Viết test cho frontend components
+* Viết test cho backend services
+* Viết test cho ML models
+
+|Kiểm thử tích hợp
+a|* Kiểm thử tích hợp giữa các service
+* Kiểm thử end-to-end
+* Kiểm thử hiệu suất
+
+|Kiểm thử bảo mật
+a|* Thực hiện penetration testing
+* Kiểm tra lỗ hổng bảo mật
+* Đánh giá tuân thủ GDPR
+|===
+
+=== Tuần 19-20: Tối ưu hóa
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Tối ưu hiệu suất
+a|* Tối ưu truy vấn MongoDB
+* Tối ưu Elasticsearch
+* Tối ưu Spark jobs
+* Tối ưu JavaScript Tracker
+
+|Tối ưu quy mô
+a|* Kiểm tra khả năng mở rộng
+* Cấu hình auto-scaling
+* Tối ưu chi phí
+
+|Tối ưu UX
+a|* Cải thiện thời gian phản hồi
+* Tối ưu giao diện người dùng
+* Cải thiện khả năng sử dụng của dashboard
+|===
+
+== Giai đoạn 6: Triển khai và đào tạo (2-3 tuần)
+
+=== Tuần 21: Triển khai sản phẩm
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Triển khai môi trường sản xuất
+a|* Triển khai cơ sở hạ tầng
+* Triển khai backend services
+* Triển khai frontend applications
+
+|Kiểm tra cuối cùng
+a|* Kiểm tra smoke test
+* Kiểm tra các tính năng chính
+* Xác nhận các yêu cầu phi chức năng
+|===
+
+=== Tuần 22-23: Đào tạo và tài liệu
+
+[cols="1,4", options="header"]
+|===
+|Nhiệm vụ |Chi tiết
+
+|Tạo tài liệu
+a|* Viết tài liệu kỹ thuật
+* Viết hướng dẫn người dùng
+* Chuẩn bị tài liệu đào tạo
+
+|Đào tạo người dùng
+a|* Đào tạo quản trị viên
+* Đào tạo người dùng cuối
+* Đào tạo đội ngũ hỗ trợ
+
+|Bàn giao hệ thống
+a|* Bàn giao mã nguồn
+* Bàn giao tài liệu
+* Thiết lập hỗ trợ sau triển khai
+|===
+
+== Tổng thời gian dự kiến: 17-23 tuần (4-6 tháng)
+
+[IMPORTANT]
+====
+*Lưu ý:*
+
+* Các giai đoạn có thể chồng chéo để tối ưu thời gian
+* Phát triển theo phương pháp Agile với sprint 2 tuần
+* Mỗi sprint sẽ cung cấp các tính năng có thể demo
+* Mốc thời gian có thể điều chỉnh tùy thuộc vào nguồn lực và độ phức tạp
+====
+
+== Biểu đồ Gantt
+
+[plantuml]
+....
+@startgantt
+Project starts 2023-01-01
+
+-- Giai đoạn 1: Lập kế hoạch và thiết kế --
+[Phân tích yêu cầu] lasts 1 weeks
+[Thiết kế hệ thống] lasts 2 weeks
+[Thiết kế hệ thống] starts after [Phân tích yêu cầu]
+
+-- Giai đoạn 2: Phát triển cơ sở hạ tầng --
+[Thiết lập môi trường] lasts 2 weeks
+[Thiết lập môi trường] starts after [Thiết kế hệ thống]
+[Triển khai DevOps] lasts 2 weeks
+[Triển khai DevOps] starts after [Thiết lập môi trường]
+
+-- Giai đoạn 3: Phát triển backend --
+[Dịch vụ thu thập dữ liệu] lasts 2 weeks
+[Dịch vụ thu thập dữ liệu] starts after [Triển khai DevOps]
+[Pipeline xử lý dữ liệu] lasts 3 weeks
+[Pipeline xử lý dữ liệu] starts after [Dịch vụ thu thập dữ liệu]
+
+-- Giai đoạn 4: Phát triển frontend --
+[JavaScript Tracker] lasts 2 weeks
+[JavaScript Tracker] starts after [Dịch vụ thu thập dữ liệu]
+[Dashboard] lasts 2 weeks
+[Dashboard] starts after [JavaScript Tracker]
+
+-- Giai đoạn 5: Kiểm thử và tối ưu hóa --
+[Kiểm thử] lasts 2 weeks
+[Kiểm thử] starts after [Pipeline xử lý dữ liệu] and [Dashboard]
+[Tối ưu hóa] lasts 2 weeks
+[Tối ưu hóa] starts after [Kiểm thử]
+
+-- Giai đoạn 6: Triển khai và đào tạo --
+[Triển khai sản phẩm] lasts 1 weeks
+[Triển khai sản phẩm] starts after [Tối ưu hóa]
+[Đào tạo và tài liệu] lasts 2 weeks
+[Đào tạo và tài liệu] starts after [Triển khai sản phẩm]
+@endgantt
+....
+
+== Phụ thuộc giữa các công việc
+
+[plantuml]
+....
+@startuml
+left to right direction
+scale 0.8
+
+rectangle "Phân tích yêu cầu" as P1
+rectangle "Thiết kế hệ thống" as P2
+rectangle "Thiết lập môi trường" as P3
+rectangle "Triển khai DevOps" as P4
+rectangle "Dịch vụ thu thập dữ liệu" as P5
+rectangle "Pipeline xử lý dữ liệu" as P6
+rectangle "JavaScript Tracker" as P7
+rectangle "Dashboard" as P8
+rectangle "Kiểm thử" as P9
+rectangle "Tối ưu hóa" as P10
+rectangle "Triển khai sản phẩm" as P11
+rectangle "Đào tạo và tài liệu" as P12
+
+P1 --> P2
+P2 --> P3
+P3 --> P4
+P4 --> P5
+P5 --> P6
+P5 --> P7
+P7 --> P8
+P6 --> P9
+P8 --> P9
+P9 --> P10
+P10 --> P11
+P11 --> P12
+@enduml
+.... 

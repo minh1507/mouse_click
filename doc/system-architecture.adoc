@@ -1,0 +1,145 @@
+= Tài liệu Hệ thống Phân tích Hành vi Người dùng từ Mouse Tracking
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+
+== Kiến trúc tổng thể hệ thống
+
+[ditaa]
+....
+                  +-------------+
+                  | Trình duyệt |
+                  |   Người     |
+                  |   Dùng      |
+                  +------+------+
+                         |
+                         | Sự kiện chuột
+                         v
+                  +-------------+
+                  |  Thu thập   |
+                  |  Dữ liệu    |
+                  |  JavaScript |
+                  +------+------+
+                         |
+         +---------------+--------------+
+         |                              |
+         v                              v
++----------------+              +---------------+
+| WebSocket API  |              |   REST API    |
+| (Thời gian thực)|              | (Dữ liệu Batch)|
++-------+--------+              +-------+-------+
+        |                               |
+        +---------------+---------------+
+                        |
+                        v
+                  +-------------+
+                  |   Apache    |
+                  |   Kafka     |
+                  | (Dữ liệu Đệm)|
+                  +------+------+
+                         |
+         +---------------+--------------+
+         |                              |
+         v                              v
++----------------+              +---------------+
+| Spark Streaming |              | Spark Batch   |
+| (Xử lý thời    |              | (Xử lý       |
+|  gian thực)    |              |  định kỳ)    |
++-------+--------+              +-------+-------+
+        |                               |
+        v                               v
++----------------+              +---------------+
+|    MongoDB     |              |     HDFS      |
+| (Dữ liệu phiên)|              | (Kho dữ liệu) |
++-------+--------+              +-------+-------+
+        |                               |
+        v                               v
++----------------+              +---------------+
+| Elasticsearch  |              |   Spark MLlib |
+| (Tìm kiếm)     |              | (Mô hình ML)  |
++-------+--------+              +-------+-------+
+        |                               |
+        +---------------+---------------+
+                        |
+                        v
+                  +-------------+
+                  |   API Phân  |
+                  |   tích Dữ   |
+                  |   liệu      |
+                  +------+------+
+                         |
+                         v
+                  +-------------+
+                  | Dashboard   |
+                  | Trực quan   |
+                  | hóa         |
+                  +-------------+
+....
+
+== Luồng dữ liệu
+
+[plantuml]
+....
+@startuml
+actor Người_dùng
+participant "Trình duyệt" as Browser
+participant "JavaScript Tracker" as Tracker
+participant "API" as API
+participant "Kafka" as Kafka
+participant "Spark Streaming" as SparkStream
+participant "Spark Batch" as SparkBatch
+participant "MongoDB" as MongoDB
+participant "HDFS" as HDFS
+participant "Phân tích ML" as ML
+participant "Dashboard" as Dashboard
+
+Người_dùng -> Browser: Tương tác với website
+Browser -> Tracker: Sự kiện chuột (di chuyển, click, hover)
+Tracker -> Tracker: Buffer sự kiện (100ms)
+Tracker -> API: Gửi batch sự kiện
+API -> Kafka: Đưa dữ liệu vào stream
+
+par Xử lý thời gian thực
+    Kafka -> SparkStream: Luồng dữ liệu liên tục
+    SparkStream -> SparkStream: Xử lý & làm giàu dữ liệu
+    SparkStream -> MongoDB: Lưu trữ dữ liệu phiên
+    MongoDB -> Dashboard: Trực quan hóa thời gian thực
+also Xử lý batch
+    Kafka -> HDFS: Lưu trữ dữ liệu thô
+    HDFS -> SparkBatch: Job xử lý theo lịch
+    SparkBatch -> SparkBatch: Tổng hợp & phân tích
+    SparkBatch -> ML: Huấn luyện mô hình hành vi
+    ML -> MongoDB: Lưu kết quả mô hình
+end
+
+Dashboard -> Người_dùng: Hiển thị thông tin chi tiết
+@enduml
+....
+
+== Công nghệ sử dụng
+
+=== Lớp thu thập dữ liệu
+* *Frontend*: JavaScript + Thư viện MouseFlow
+* *API*: Node.js + Express
+* *Giao thức*: WebSocket cho dữ liệu thời gian thực, REST API cho dữ liệu batch
+
+=== Lớp lưu trữ
+* *Message Queue*: Apache Kafka
+* *Lưu trữ phiên*: MongoDB
+* *Đánh chỉ mục tìm kiếm*: Elasticsearch
+* *Kho dữ liệu*: Apache Hadoop HDFS
+
+=== Lớp xử lý
+* *Xử lý thời gian thực*: Apache Spark Streaming
+* *Xử lý batch*: Apache Spark
+* *ETL*: Apache NiFi
+
+=== Lớp phân tích
+* *Học máy*: Spark MLlib
+* *Thống kê*: Python với Pandas, NumPy
+
+=== Lớp trực quan hóa
+* *Dashboard*: D3.js, React
+* *Báo cáo*: Tableau, PowerBI
+* *Giám sát*: Grafana 
