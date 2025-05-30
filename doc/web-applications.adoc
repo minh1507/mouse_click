@@ -1,0 +1,812 @@
+= Ứng dụng Web: Hệ thống Thu thập và Phân tích Hành vi Người dùng
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:source-highlighter: highlightjs
+
+== Tổng quan
+
+Hệ thống bao gồm hai ứng dụng web chính:
+
+1. *Website Thu thập* - Tích hợp thư viện JavaScript tracker để thu thập dữ liệu hành vi người dùng
+2. *Website Admin* - Dashboard quản trị và phân tích dữ liệu
+
+Cả hai ứng dụng đều được xây dựng bằng React và Shadcn UI để đảm bảo giao diện hiện đại, thống nhất và dễ sử dụng.
+
+== Công nghệ sử dụng
+
+[cols="1,4", options="header"]
+|===
+|Công nghệ |Mục đích sử dụng
+
+|React
+|Framework phát triển giao diện người dùng
+
+|Next.js
+|Framework React cho Server-Side Rendering và tối ưu SEO
+
+|TypeScript
+|Ngôn ngữ lập trình để đảm bảo tính ổn định và bảo trì
+
+|Shadcn UI
+|Thư viện UI components có tính tùy biến cao
+
+|TanStack Query (React Query)
+|Quản lý trạng thái và fetching data
+
+|Zustand
+|Quản lý state toàn cục
+
+|React Router
+|Quản lý định tuyến (đối với Create React App)
+
+|Recharts
+|Thư viện biểu đồ cho React
+
+|React Flow
+|Trực quan hóa luồng người dùng và đường dẫn
+
+|Tailwind CSS
+|Framework CSS utility-first
+
+|Axios
+|Thư viện HTTP client
+
+|Socket.io
+|WebSocket cho dữ liệu thời gian thực
+|===
+
+== Website Thu thập
+
+=== Kiến trúc
+
+Website thu thập dữ liệu được thiết kế để tích hợp dễ dàng với thư viện mouse tracker. Kiến trúc của website được xây dựng theo mô hình component-based của React.
+
+[plantuml]
+....
+@startuml
+package "Website Thu thập" {
+  [Pages] --> [Layouts]
+  [Pages] --> [Components]
+  [Pages] --> [Hooks]
+  [Components] --> [Hooks]
+  [Hooks] --> [Services]
+  [Services] --> [API Client]
+  [Services] --> [Mouse Tracker Integration]
+  [Mouse Tracker Integration] --> [Mouse Tracker Library]
+}
+@enduml
+....
+
+=== Cấu trúc thư mục
+
+[source]
+----
+src/
+  ├── app/                # Next.js App Router
+  │   ├── (auth)/         # Các trang xác thực
+  │   ├── (dashboard)/    # Các trang dashboard
+  │   ├── api/            # API routes
+  │   └── layout.tsx      # Layout chính
+  ├── components/         # React components
+  │   ├── ui/             # Shadcn UI components
+  │   ├── common/         # Components chung
+  │   ├── tracking/       # Components liên quan đến theo dõi
+  │   └── forms/          # Components form
+  ├── hooks/              # Custom React hooks
+  ├── lib/                # Thư viện và utilities
+  │   ├── tracker/        # Tích hợp mouse tracker
+  │   └── utils/          # Hàm tiện ích
+  ├── services/           # Dịch vụ API
+  └── types/              # Type definitions
+----
+
+=== Tích hợp Mouse Tracker
+
+Thư viện Mouse Tracker được tích hợp vào website thông qua một React Provider, cho phép theo dõi hoạt động người dùng trên toàn bộ ứng dụng.
+
+[source,tsx]
+----
+// src/lib/tracker/TrackerProvider.tsx
+import React, { createContext, useContext, useEffect } from 'react';
+import MouseTracker from 'mouse-tracker';
+
+type TrackerContextType = {
+  startTracking: () => void;
+  stopTracking: () => void;
+  isTracking: boolean;
+};
+
+const TrackerContext = createContext<TrackerContextType | undefined>(undefined);
+
+export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isTracking, setIsTracking] = React.useState(false);
+  const trackerRef = React.useRef<any>(null);
+
+  useEffect(() => {
+    trackerRef.current = new MouseTracker({
+      apiEndpoint: process.env.NEXT_PUBLIC_TRACKER_API_ENDPOINT,
+      websocketEndpoint: process.env.NEXT_PUBLIC_TRACKER_WS_ENDPOINT,
+      throttleInterval: 100,
+      batchSize: 50,
+      batchInterval: 2000,
+    });
+
+    return () => {
+      if (trackerRef.current) {
+        trackerRef.current.stop();
+      }
+    };
+  }, []);
+
+  const startTracking = () => {
+    if (trackerRef.current) {
+      trackerRef.current.start();
+      setIsTracking(true);
+    }
+  };
+
+  const stopTracking = () => {
+    if (trackerRef.current) {
+      trackerRef.current.stop();
+      setIsTracking(false);
+    }
+  };
+
+  return (
+    <TrackerContext.Provider value={{ startTracking, stopTracking, isTracking }}>
+      {children}
+    </TrackerContext.Provider>
+  );
+};
+
+export const useTracker = () => {
+  const context = useContext(TrackerContext);
+  if (context === undefined) {
+    throw new Error('useTracker must be used within a TrackerProvider');
+  }
+  return context;
+};
+----
+
+=== Tính năng chính
+
+1. *Tùy chỉnh theo dõi*: Khả năng bật/tắt các loại sự kiện theo dõi cụ thể
+2. *Dashboard mini*: Hiển thị dữ liệu thu thập thời gian thực trên website
+3. *Quản lý đồng ý (Consent Management)*: Hệ thống quản lý sự đồng ý của người dùng theo GDPR
+4. *A/B Testing*: Tích hợp với các thử nghiệm A/B
+5. *Gắn thẻ phiên (Session Tagging)*: Khả năng gắn thẻ và phân loại phiên người dùng
+6. *Quản lý mục tiêu (Goal Management)*: Theo dõi các mục tiêu chuyển đổi
+
+=== Giao diện người dùng
+
+==== Banner Đồng ý Cookie
+
+[source,tsx]
+----
+// src/components/tracking/ConsentBanner.tsx
+import { Button } from "@/components/ui/button";
+import { useTracker } from "@/lib/tracker/TrackerProvider";
+
+export const ConsentBanner = () => {
+  const { startTracking } = useTracker();
+  
+  const handleAccept = () => {
+    localStorage.setItem('tracking-consent', 'accepted');
+    startTracking();
+  };
+  
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md">
+      <div className="container mx-auto flex flex-col md:flex-row items-center justify-between">
+        <p className="mb-4 md:mb-0">
+          Website này sử dụng cookie để phân tích hành vi người dùng nhằm cải thiện trải nghiệm.
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => {}}>Từ chối</Button>
+          <Button onClick={handleAccept}>Chấp nhận</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+----
+
+==== Trang cài đặt theo dõi
+
+[source,tsx]
+----
+// src/app/(dashboard)/tracking-settings/page.tsx
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+
+export default function TrackingSettingsPage() {
+  return (
+    <div className="container mx-auto py-10">
+      <h1 className="text-3xl font-bold mb-6">Cài đặt theo dõi</h1>
+      
+      <Tabs defaultValue="events">
+        <TabsList>
+          <TabsTrigger value="events">Sự kiện</TabsTrigger>
+          <TabsTrigger value="privacy">Quyền riêng tư</TabsTrigger>
+          <TabsTrigger value="goals">Mục tiêu</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="events">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cài đặt sự kiện theo dõi</CardTitle>
+              <CardDescription>
+                Quản lý các loại sự kiện được thu thập trên website
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="mouse-move">Di chuyển chuột</Label>
+                  <p className="text-sm text-gray-500">Thu thập vị trí di chuyển chuột</p>
+                </div>
+                <Switch id="mouse-move" defaultChecked />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="mouse-click">Click chuột</Label>
+                  <p className="text-sm text-gray-500">Thu thập vị trí và phần tử được click</p>
+                </div>
+                <Switch id="mouse-click" defaultChecked />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="scroll">Scroll</Label>
+                  <p className="text-sm text-gray-500">Thu thập vị trí cuộn trang</p>
+                </div>
+                <Switch id="scroll" defaultChecked />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="form-input">Nhập form</Label>
+                  <p className="text-sm text-gray-500">Thu thập thời gian nhập form (không thu thập nội dung)</p>
+                </div>
+                <Switch id="form-input" />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Nội dung các tab khác */}
+      </Tabs>
+    </div>
+  );
+}
+----
+
+== Website Admin
+
+=== Kiến trúc
+
+Website Admin được thiết kế để hiển thị và phân tích dữ liệu hành vi người dùng từ hệ thống thu thập. Ứng dụng được xây dựng theo mô hình React + Shadcn UI với trọng tâm là khả năng mở rộng và hiệu suất cao.
+
+[plantuml]
+....
+@startuml
+package "Website Admin" {
+  [Pages] --> [Layouts]
+  [Pages] --> [Components]
+  [Pages] --> [Hooks]
+  [Components] --> [Hooks]
+  [Hooks] --> [Services]
+  [Services] --> [API Client]
+  [Services] --> [Data Transformers]
+  [Services] --> [WebSocket Client]
+  [Data Transformers] --> [Visualization Components]
+}
+@enduml
+....
+
+=== Cấu trúc thư mục
+
+[source]
+----
+src/
+  ├── app/                    # Next.js App Router
+  │   ├── (auth)/             # Các trang xác thực
+  │   ├── dashboard/          # Dashboard chính
+  │   ├── heatmaps/           # Phân tích heatmap
+  │   ├── sessions/           # Quản lý phiên
+  │   ├── funnels/            # Phân tích funnel
+  │   ├── path-analysis/      # Phân tích đường dẫn
+  │   ├── reports/            # Báo cáo
+  │   ├── settings/           # Cài đặt
+  │   ├── api/                # API routes
+  │   └── layout.tsx          # Layout chính
+  ├── components/             # React components
+  │   ├── ui/                 # Shadcn UI components
+  │   ├── charts/             # Components biểu đồ
+  │   ├── heatmaps/           # Components heatmap
+  │   ├── path-analysis/      # Components phân tích đường dẫn
+  │   ├── sessions/           # Components phiên
+  │   ├── filters/            # Components lọc
+  │   └── tables/             # Components bảng dữ liệu
+  ├── hooks/                  # Custom React hooks
+  ├── lib/                    # Thư viện và utilities
+  │   ├── api/                # API client
+  │   ├── analytics/          # Các hàm phân tích
+  │   └── utils/              # Hàm tiện ích
+  ├── services/               # Dịch vụ API
+  └── types/                  # Type definitions
+----
+
+=== Tính năng phân tích nâng cao
+
+==== 1. Heatmap nâng cao
+
+* *Heatmap tương tác*: Khả năng zoom, pan, và tương tác với heatmap
+* *Heatmap phân đoạn*: Tạo heatmap riêng cho từng phân đoạn người dùng
+* *Heatmap so sánh*: So sánh heatmap giữa các phiên bản A/B testing
+* *Heatmap thời gian thực*: Cập nhật liên tục với dữ liệu thời gian thực
+* *Heatmap theo thiết bị*: Phân tích riêng theo loại thiết bị, độ phân giải màn hình
+
+==== 2. Phân tích đường dẫn người dùng
+
+* *Biểu đồ Sankey*: Hiển thị luồng người dùng qua các trang
+* *Path Flow*: Trực quan hóa các đường dẫn phổ biến
+* *Path Comparison*: So sánh đường dẫn giữa các phân đoạn người dùng
+* *Path Optimization*: Đề xuất tối ưu hóa dựa trên phân tích đường dẫn
+* *User Journey Mapping*: Bản đồ hành trình người dùng với các điểm tiếp xúc
+
+==== 3. Phân tích phiên
+
+* *Session Replay*: Phát lại hành vi người dùng trong phiên
+* *Session Filtering*: Lọc phiên theo nhiều tiêu chí (thời gian, hành vi, trang...)
+* *Session Tagging*: Gắn thẻ phiên để phân loại và phân tích
+* *Error Detection*: Phát hiện lỗi trong phiên người dùng
+* *Behavior Patterns*: Nhận diện mẫu hành vi trong phiên
+
+==== 4. Phân tích Funnel
+
+* *Funnel Builder*: Tạo và tùy chỉnh funnel phân tích
+* *Multi-step Funnels*: Phân tích funnel nhiều bước
+* *Funnel Comparison*: So sánh hiệu suất giữa các funnel
+* *Conversion Optimization*: Đề xuất cải thiện tỷ lệ chuyển đổi
+* *Drop-off Analysis*: Phân tích điểm người dùng rời bỏ funnel
+
+==== 5. Phân tích phân đoạn
+
+* *Segment Builder*: Tạo phân đoạn người dùng dựa trên hành vi
+* *Behavioral Cohorts*: Phân tích theo nhóm hành vi
+* *Segment Comparison*: So sánh hành vi giữa các phân đoạn
+* *Predictive Segments*: Dự đoán phân đoạn dựa trên ML
+* *Segment Export*: Xuất phân đoạn để sử dụng trong các công cụ khác
+
+==== 6. Phân tích AI
+
+* *Anomaly Detection*: Phát hiện hành vi bất thường
+* *Behavior Prediction*: Dự đoán hành vi người dùng
+* *Content Recommendations*: Đề xuất nội dung dựa trên hành vi
+* *Sentiment Analysis*: Phân tích cảm xúc từ hành vi
+* *Intent Prediction*: Dự đoán ý định người dùng
+
+=== Giao diện người dùng
+
+==== Dashboard chính
+
+[source,tsx]
+----
+// src/app/dashboard/page.tsx
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OverviewChart } from "@/components/charts/OverviewChart";
+import { TopPagesTable } from "@/components/tables/TopPagesTable";
+import { DeviceChart } from "@/components/charts/DeviceChart";
+import { RecentSessionsList } from "@/components/sessions/RecentSessionsList";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+
+export default function DashboardPage() {
+  return (
+    <div className="container mx-auto py-10">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <DateRangePicker />
+      </div>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tổng phiên</CardTitle>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2,853</div>
+            <p className="text-xs text-muted-foreground">+12.5% so với tuần trước</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Thời gian trung bình</CardTitle>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3m 45s</div>
+            <p className="text-xs text-muted-foreground">+2.1% so với tuần trước</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tỷ lệ thoát</CardTitle>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <path d="M2 10h20" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">32.5%</div>
+            <p className="text-xs text-muted-foreground">-4.1% so với tuần trước</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tỷ lệ chuyển đổi</CardTitle>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">8.2%</div>
+            <p className="text-xs text-muted-foreground">+5.4% so với tuần trước</p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Tổng quan</TabsTrigger>
+          <TabsTrigger value="analytics">Phân tích</TabsTrigger>
+          <TabsTrigger value="reports">Báo cáo</TabsTrigger>
+          <TabsTrigger value="notifications">Thông báo</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Số liệu tổng quan</CardTitle>
+              </CardHeader>
+              <CardContent className="pl-2">
+                <OverviewChart />
+              </CardContent>
+            </Card>
+            
+            <Card className="lg:col-span-3">
+              <CardHeader>
+                <CardTitle>Các trang phổ biến</CardTitle>
+                <CardDescription>
+                  Top 5 trang được truy cập nhiều nhất
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TopPagesTable />
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="lg:col-span-3">
+              <CardHeader>
+                <CardTitle>Phân bố thiết bị</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DeviceChart />
+              </CardContent>
+            </Card>
+            
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Phiên gần đây</CardTitle>
+                <CardDescription>
+                  5 phiên gần đây nhất
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RecentSessionsList />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        {/* Nội dung các tab khác */}
+      </Tabs>
+    </div>
+  );
+}
+----
+
+==== Trang Heatmap
+
+[source,tsx]
+----
+// src/app/heatmaps/page.tsx
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { HeatmapViewer } from "@/components/heatmaps/HeatmapViewer";
+import { HeatmapFilters } from "@/components/filters/HeatmapFilters";
+
+export default function HeatmapsPage() {
+  return (
+    <div className="container mx-auto py-10">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Heatmaps</h1>
+        
+        <div className="flex gap-2">
+          <DateRangePicker />
+          <Button>Tạo mới</Button>
+        </div>
+      </div>
+      
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Lựa chọn trang</CardTitle>
+          <CardDescription>
+            Chọn trang web để xem heatmap
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trang" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="home">Trang chủ</SelectItem>
+                  <SelectItem value="products">Trang sản phẩm</SelectItem>
+                  <SelectItem value="about">Giới thiệu</SelectItem>
+                  <SelectItem value="contact">Liên hệ</SelectItem>
+                  <SelectItem value="checkout">Thanh toán</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Thiết bị" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="desktop">Desktop</SelectItem>
+                  <SelectItem value="tablet">Tablet</SelectItem>
+                  <SelectItem value="mobile">Mobile</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <div className="grid gap-8 md:grid-cols-4">
+        <div className="md:col-span-1">
+          <HeatmapFilters />
+        </div>
+        
+        <div className="md:col-span-3">
+          <Tabs defaultValue="clicks">
+            <TabsList className="w-full">
+              <TabsTrigger value="clicks" className="flex-1">Click</TabsTrigger>
+              <TabsTrigger value="moves" className="flex-1">Di chuyển</TabsTrigger>
+              <TabsTrigger value="scroll" className="flex-1">Scroll</TabsTrigger>
+              <TabsTrigger value="attention" className="flex-1">Chú ý</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="clicks" className="mt-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <HeatmapViewer type="clicks" />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="moves" className="mt-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <HeatmapViewer type="moves" />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="scroll" className="mt-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <HeatmapViewer type="scroll" />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="attention" className="mt-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <HeatmapViewer type="attention" />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+}
+----
+
+==== Trang Phân tích Đường dẫn
+
+[source,tsx]
+----
+// src/app/path-analysis/page.tsx
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { PathFilters } from "@/components/filters/PathFilters";
+import { PathFlowDiagram } from "@/components/path-analysis/PathFlowDiagram";
+import { PathStatistics } from "@/components/path-analysis/PathStatistics";
+import { PathSequenceList } from "@/components/path-analysis/PathSequenceList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export default function PathAnalysisPage() {
+  return (
+    <div className="container mx-auto py-10">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Phân tích đường dẫn</h1>
+        
+        <div className="flex gap-2">
+          <DateRangePicker />
+          <Button>Tạo báo cáo</Button>
+        </div>
+      </div>
+      
+      <div className="grid gap-8 md:grid-cols-4">
+        <div className="md:col-span-1">
+          <PathFilters />
+        </div>
+        
+        <div className="md:col-span-3">
+          <Tabs defaultValue="flow">
+            <TabsList className="w-full">
+              <TabsTrigger value="flow" className="flex-1">Luồng</TabsTrigger>
+              <TabsTrigger value="sankey" className="flex-1">Sankey</TabsTrigger>
+              <TabsTrigger value="sequences" className="flex-1">Chuỗi</TabsTrigger>
+              <TabsTrigger value="stats" className="flex-1">Thống kê</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="flow" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Biểu đồ luồng đường dẫn</CardTitle>
+                  <CardDescription>
+                    Hiển thị luồng di chuyển phổ biến của người dùng
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PathFlowDiagram />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="sequences" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Chuỗi đường dẫn phổ biến</CardTitle>
+                  <CardDescription>
+                    Danh sách các chuỗi đường dẫn được sử dụng nhiều nhất
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PathSequenceList />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="stats" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Thống kê đường dẫn</CardTitle>
+                  <CardDescription>
+                    Phân tích chi tiết về các đường dẫn
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PathStatistics />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            {/* Nội dung tab Sankey */}
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+}
+----
+
+== Phương pháp triển khai
+
+=== Quy trình phát triển
+
+1. *Thiết kế UI/UX*
+   - Tạo wireframes và prototypes
+   - Thiết kế hệ thống design system với Shadcn UI
+   - Đánh giá và cải thiện trải nghiệm người dùng
+
+2. *Phát triển Frontend*
+   - Xây dựng các components
+   - Phát triển trang và chức năng
+   - Tích hợp với API
+
+3. *Tích hợp thư viện Mouse Tracker*
+   - Phát triển React Provider cho thư viện
+   - Tùy chỉnh cấu hình theo nhu cầu
+   - Kiểm thử hiệu suất
+
+4. *Phát triển tính năng phân tích*
+   - Phát triển các thuật toán phân tích
+   - Xây dựng các components trực quan hóa
+   - Tối ưu hóa hiệu suất xử lý
+
+=== Quản lý phiên bản
+
+Hệ thống được phát triển theo mô hình Trunk-based development với các quy tắc:
+
+* Mỗi tính năng được phát triển trên nhánh riêng
+* Code review bắt buộc trước khi merge
+* CI/CD tự động cho mỗi PR và merge vào main
+* Semantic versioning cho các phiên bản
+
+=== Testing
+
+* *Unit Testing*: Jest + React Testing Library
+* *Integration Testing*: Cypress
+* *Performance Testing*: Lighthouse và custom scripts
+* *A11y Testing*: axe-core
+
+== Kế hoạch phát triển tương lai
+
+=== Giai đoạn 1: MVP (2-3 tháng)
+
+* Website thu thập cơ bản với tích hợp Mouse Tracker
+* Dashboard admin với các tính năng phân tích cơ bản
+* Heatmap và phân tích phiên
+* Quản lý người dùng và phân quyền
+
+=== Giai đoạn 2: Nâng cao (3-4 tháng)
+
+* Phân tích đường dẫn nâng cao
+* Phân tích funnel
+* Phân đoạn người dùng
+* A/B Testing tích hợp
+* Report tự động
+
+=== Giai đoạn 3: AI và tự động hóa (4-6 tháng)
+
+* Phân tích AI
+* Anomaly detection
+* Đề xuất tối ưu hóa tự động
+* Segmentation tự động
+* API mở rộng cho tích hợp bên thứ ba 
