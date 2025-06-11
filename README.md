@@ -25,7 +25,7 @@ A comprehensive solution for tracking and analyzing mouse behavior on websites. 
 - **Django REST Framework**: RESTful API framework
 - **Channels**: WebSocket support for real-time data collection
 - **Celery**: Distributed task queue for batch processing
-- **PostgreSQL**: Relational database for data storage
+- **MongoDB**: NoSQL database for data storage
 
 ## Project Structure
 
@@ -58,7 +58,7 @@ A comprehensive solution for tracking and analyzing mouse behavior on websites. 
 
 - Node.js 18+ and npm
 - Python 3.9+
-- PostgreSQL
+- MongoDB
 
 ### Backend Setup
 
@@ -133,4 +133,15 @@ A comprehensive solution for tracking and analyzing mouse behavior on websites. 
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Database Configuration
+
+The application uses MongoDB as the database backend.
+
+### MongoDB Setup
+
+1. Install MongoDB on your system if you haven't already
+2. Start the MongoDB service
+3. The application connects to MongoDB at `localhost:27017` by default
+4. No authentication is required for development setup 

@@ -13,4 +13,6 @@ urlpatterns = [
     path('', include(router.urls)),
     # Add authentication URLs
     path('auth/', include('rest_framework.urls')),
+    # Add tracking URLs
+    path('tracking/', include('apps.tracking.urls')),
 ] 

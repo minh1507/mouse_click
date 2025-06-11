@@ -18,13 +18,16 @@ MIDDLEWARE = ['debug_toolbar.middleware.DebugToolbarMiddleware'] + MIDDLEWARE
 
 INTERNAL_IPS = ['127.0.0.1']
 
-# Use SQLite as the database for faster development
+# Use SQLite for all environments
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Cấu hình MongoDB đã được chuyển sang utils/mongo_client.py
+# Sử dụng pymongo trực tiếp thay vì thông qua djongo
 
 # Email backend for development
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
