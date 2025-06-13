@@ -11,8 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     // Log request body
     const rawBody = await request.text();
-    console.log('Raw request body:', rawBody);
-    
+
     let body;
     try {
       body = JSON.parse(rawBody);
@@ -24,14 +23,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Parsed request body:', body);
-    
     // Đảm bảo dữ liệu hợp lệ
     const processedData = Array.isArray(body) 
       ? body.map(ensureValidData)
       : ensureValidData(body);
-    
-    console.log('Forwarding tracking event to backend:', processedData);
     
     // Chuyển tiếp request đến backend
     const response = await fetch('http://localhost:8000/api/tracking/events/', {
@@ -55,8 +50,7 @@ export async function POST(request: NextRequest) {
     }
     
     const data = await response.json();
-    console.log('Backend response:', data);
-    
+
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Error forwarding tracking event:', error);
@@ -85,7 +79,6 @@ function ensureValidData(data: any) {
   // Ensure valid session_id in UUID format
   if (!result.session_id || !isValidUUID(result.session_id)) {
     result.session_id = crypto.randomUUID();
-    console.log('Generated new session_id:', result.session_id);
   }
   
   // Add timestamp if not present

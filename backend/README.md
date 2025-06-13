@@ -7,6 +7,18 @@ Backend API cho hệ thống theo dõi chuột, xây dựng bằng Django REST F
 - Python 3.8+
 - MongoDB (để lưu trữ dữ liệu tracking)
 
+## Khởi tạo môi trường
+
+1. venv
+```bash
+python -m venv venv
+```
+
+2. activation
+```bash
+source venv/Scripts/activate
+```
+
 ## Cài đặt
 
 1. Cài đặt các dependencies:
