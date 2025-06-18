@@ -1,0 +1,15 @@
+{
+  "name": "mongo-sink-connector",
+  "config": {
+    "connector.class": "com.mongodb.kafka.connect.MongoSinkConnector",
+    "tasks.max": "1",
+    "topics": "mouse-tracking-events",
+    "connection.uri": "mongodb://mongodb:27017",
+    "database": "events",
+    "collection": "tracking_events",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "writemodel.strategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.ReplaceOneBusinessKeyStrategy",
+    "replace.one.business.key.filter": "{\"_id\": \"$.user_id\"}"
+  }
+}
