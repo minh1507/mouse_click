@@ -57,31 +57,23 @@ export async function POST(request: NextRequest) {
     const responseText = await response.text();
     console.log('Backend response text:', responseText);
 
-    if (!response.ok) {
-      let errorMessage = 'Failed to create session';
-      try {
-        const errorData = JSON.parse(responseText);
-        errorMessage = errorData.error || errorMessage;
-      } catch (e) {
-        console.error('Error parsing error response:', e);
-      }
-      throw new Error(errorMessage);
-    }
-
-    // Parse successful response
-    let result;
+    // Parse response text as JSON
+    let responseData;
     try {
-      result = JSON.parse(responseText);
+      responseData = JSON.parse(responseText);
     } catch (e) {
-      console.error('Error parsing success response:', e);
-      result = { status: 'success' };
+      console.error('Error parsing response as JSON:', e);
+      return NextResponse.json(
+        { error: 'Invalid JSON response from backend' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json(responseData, { status: response.status });
   } catch (error) {
-    console.error('Error creating session:', error);
+    console.error('Error processing session:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create session' },
+      { error: 'Failed to process session', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
@@ -89,7 +81,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    // Get session ID from URL
+    // Extract session ID from URL
     const url = new URL(request.url);
     const sessionId = url.pathname.split('/').pop();
     
@@ -102,7 +94,7 @@ export async function PATCH(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    console.log('PATCH request body:', body);
+    console.log('Received PATCH request body:', body);
 
     // Send request to backend
     const response = await fetch(`${API_URL}/tracking/sessions/${sessionId}/`, {
@@ -119,31 +111,23 @@ export async function PATCH(request: NextRequest) {
     const responseText = await response.text();
     console.log('Backend response text:', responseText);
 
-    if (!response.ok) {
-      let errorMessage = 'Failed to update session';
-      try {
-        const errorData = JSON.parse(responseText);
-        errorMessage = errorData.error || errorMessage;
-      } catch (e) {
-        console.error('Error parsing error response:', e);
-      }
-      throw new Error(errorMessage);
-    }
-
-    // Parse successful response
-    let result;
+    // Parse response text as JSON
+    let responseData;
     try {
-      result = JSON.parse(responseText);
+      responseData = JSON.parse(responseText);
     } catch (e) {
-      console.error('Error parsing success response:', e);
-      result = { status: 'success' };
+      console.error('Error parsing response as JSON:', e);
+      return NextResponse.json(
+        { error: 'Invalid JSON response from backend' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json(responseData, { status: response.status });
   } catch (error) {
     console.error('Error updating session:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to update session' },
+      { error: 'Failed to update session', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

@@ -451,11 +451,20 @@ def update_session(request, session_id):
         
         # Get sessions collection
         sessions_collection = get_collection('sessions')
+        if not sessions_collection:
+            logger.error("Failed to get sessions collection")
+            return JsonResponse({'error': 'Database connection error'}, status=500)
         
         # Validate data
         if not isinstance(data, dict):
             logger.error(f"Invalid data type: {type(data)}")
             return JsonResponse({'error': 'Invalid data format. Expected JSON object'}, status=400)
+        
+        # Check if session exists
+        session = sessions_collection.find_one({'session_id': session_id})
+        if not session:
+            logger.error(f"Session not found: {session_id}")
+            return JsonResponse({'error': 'Session not found'}, status=404)
         
         # Update session
         try:
@@ -463,23 +472,29 @@ def update_session(request, session_id):
                 'last_activity': datetime.utcnow(),
                 **data
             }
+            
+            # Log update operation
+            logger.info(f"Updating session {session_id} with data: {update_data}")
+            
             result = sessions_collection.update_one(
                 {'session_id': session_id},
                 {'$set': update_data}
             )
             
-            if result.matched_count == 0:
-                logger.error(f"Session not found: {session_id}")
-                return JsonResponse({'error': 'Session not found'}, status=404)
-                
-            logger.info(f"Updated session: {session_id}")
-            return JsonResponse({'status': 'success'})
+            if result.modified_count == 0:
+                logger.warning(f"No changes made to session {session_id}")
+            
+            logger.info(f"Successfully updated session: {session_id}")
+            return JsonResponse({
+                'status': 'success',
+                'session_id': session_id,
+                'updated_at': datetime.utcnow().isoformat()
+            })
             
         except Exception as e:
-            logger.error(f"Failed to update session: {session_id}")
-            logger.error(str(e))
-            return JsonResponse({'error': 'Failed to update session'}, status=500)
+            logger.error(f"Failed to update session {session_id}: {str(e)}")
+            return JsonResponse({'error': f'Failed to update session: {str(e)}'}, status=500)
             
     except Exception as e:
-        logger.error(f"Error updating session: {str(e)}")
+        logger.error(f"Error in update_session: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500) 
