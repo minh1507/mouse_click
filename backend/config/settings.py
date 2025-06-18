@@ -17,7 +17,7 @@ SECRET_KEY = 'django-insecure-mouse-tracker-dev-key-change-in-production'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend', 'frontend', '*']
 
 # Application definition
 
@@ -127,6 +127,30 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True  # Only for development
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://frontend:3000',
+]
+CORS_ALLOWED_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Logging Configuration
 LOGGING = {
@@ -181,4 +205,27 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100,
+}
+
+# MongoDB settings
+MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://mongo:27017/mouse_tracker')
+MONGODB_DB_NAME = 'mouse_tracker'
+MONGODB_COLLECTIONS = {
+    'sessions': 'sessions',
+    'events': 'events',
+    'analytics': 'analytics'
+}
+
+# MongoDB client settings
+MONGODB_CLIENT_SETTINGS = {
+    'connectTimeoutMS': 5000,
+    'socketTimeoutMS': 5000,
+    'serverSelectionTimeoutMS': 5000,
+    'maxPoolSize': 50,
+    'minPoolSize': 10,
+    'retryWrites': True,
+    'retryReads': True,
+    'w': 'majority',
+    'wtimeout': 2500,
+    'readPreference': 'secondaryPreferred'
 } 

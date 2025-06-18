@@ -14,9 +14,16 @@ services:
       - DJANGO_SETTINGS_MODULE=config.settings
       - MONGODB_URI=mongodb://mongo:27017/mouse_tracker
       - REDIS_URL=redis://redis:6379/0
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend,frontend
     depends_on:
       - mongo
       - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/tracking/test/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   frontend:
     build: ./frontend
@@ -29,9 +36,10 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://backend:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   mongo:
     image: mongo:6

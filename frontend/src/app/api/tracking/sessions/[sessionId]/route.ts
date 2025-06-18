@@ -9,7 +9,7 @@ export async function PUT(
     const sessionId = params.sessionId;
     
     // Chuyển tiếp request đến backend
-    const response = await fetch(`http://localhost:8000/api/tracking/sessions/${sessionId}/`, {
+    const response = await fetch(`http://backend:8000/api/tracking/sessions/${sessionId}/`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

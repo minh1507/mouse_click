@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     console.log('Testing backend connection...');
     
     // Gọi endpoint test của backend
-    const response = await fetch('http://localhost:8000/api/tracking/test/', {
+    const response = await fetch('http://backend:8000/api/tracking/test/', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

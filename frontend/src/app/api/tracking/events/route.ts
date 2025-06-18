@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       : ensureValidData(body);
     
     // Chuyển tiếp request đến backend
-    const response = await fetch('http://localhost:8000/api/tracking/events/', {
+    const response = await fetch('http://backend:8000/api/tracking/events/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

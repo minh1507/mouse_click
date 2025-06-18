@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     // Chuyển tiếp request đến backend
-    const response = await fetch('http://localhost:8000/api/tracking/sessions/', {
+    const response = await fetch('http://backend:8000/api/tracking/sessions/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

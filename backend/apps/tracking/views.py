@@ -4,13 +4,16 @@ import uuid
 import json
 import logging
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import JSONParser
 from django.utils import timezone
 from django.http import JsonResponse
 from django.core.exceptions import ValidationError
+from django.conf import settings
+from .utils.mongo_client import get_collection, ensure_collections
+from datetime import datetime
 
 from .models import Session, Event
 from utils.mongo_client import save_event, save_session, get_events_by_session
@@ -80,102 +83,45 @@ class EventsView(APIView):
                 )
                 
             try:
-                # Trước tiên thử tìm session với session_id chính xác
-                session = Session.objects.get(session_id=session_id)
-                logger.info(f"Found existing session: {session.session_id}")
-            except (Session.DoesNotExist, ValidationError) as e:
-                # Đây là trường hợp bình thường khi có session ID mới
-                if isinstance(e, Session.DoesNotExist):
-                    logger.info(f"Creating new session for UUID: {session_id} (not found in database)")
-                else:
-                    logger.warning(f"Invalid UUID format: {session_id}, will create new session")
+                # Ensure MongoDB collections exist
+                ensure_collections()
                 
-                # Tạo session mới với UUID mới thay vì báo lỗi
-                try:
-                    # Tạo UUID mới thay vì cố chuyển đổi session_id không hợp lệ
-                    new_uuid = uuid.uuid4()
-                    logger.info(f"Generated new UUID: {new_uuid} for session_id: {session_id}")
-                    
-                    # Tạo session trong Django SQLite
-                    session = Session.objects.create(
-                        session_id=new_uuid,
-                        user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                        ip_address=self.get_client_ip(request),
-                        referrer=request.META.get('HTTP_REFERER', ''),
-                        start_time=timezone.now(),
-                        is_active=True
-                    )
-                    
-                    # Lưu session vào MongoDB
+                # Get sessions collection
+                sessions_collection = get_collection('sessions')
+                if not sessions_collection:
+                    return Response({'error': 'Failed to connect to MongoDB'}, status=500)
+                
+                # Check if session exists
+                session = sessions_collection.find_one({'session_id': session_id})
+                if not session:
+                    # Create new session
                     session_data = {
-                        'session_id': str(session.session_id),
-                        'user_agent': session.user_agent,
-                        'ip_address': session.ip_address,
-                        'referrer': session.referrer,
-                        'start_time': session.start_time,
-                        'is_active': session.is_active,
-                        'original_session_id': session_id
+                        'session_id': session_id,
+                        'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+                        'referrer': request.META.get('HTTP_REFERER', ''),
+                        'created_at': datetime.utcnow()
                     }
-                    
-                    mongo_saved = save_session(session_data)
-                    if mongo_saved:
-                        logger.info(f"Session saved to MongoDB: {session.session_id}")
-                    else:
-                        logger.warning(f"Failed to save session to MongoDB: {session.session_id}")
-                    
-                    logger.info(f"Created new session: {session.session_id}")
-                except Exception as e:
-                    logger.exception(f"Error creating session: {str(e)}")
-                    return Response(
-                        {"error": f"Error creating session: {str(e)}"}, 
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                    )
-            
-            # Create event with safe JSON data
-            try:
-                # Ensure data is serializable
-                data_json = json.dumps(data)
-                event_data = json.loads(data_json)
+                    sessions_collection.insert_one(session_data)
+                    logger.info(f"Created new session: {session_id}")
                 
-                # Tạo event trong Django SQLite
-                event = Event.objects.create(
-                    session=session,
-                    event_type=data.get('event_type', 'custom'),
-                    timestamp=timezone.now(),
-                    url=data.get('url', ''),
-                    data=event_data
-                )
+                # Get events collection
+                events_collection = get_collection('events')
+                if not events_collection:
+                    return Response({'error': 'Failed to connect to MongoDB'}, status=500)
                 
-                # Lưu event vào MongoDB
-                mongo_event_data = {
-                    'event_id': str(event.id),
-                    'session_id': str(session.session_id),
-                    'event_type': event.event_type,
-                    'timestamp': event.timestamp,
-                    'url': event.url,
-                    'data': event_data
+                # Save event
+                event_data = {
+                    'session_id': session_id,
+                    'event_type': data.get('event_type', 'unknown'),
+                    'data': data,
+                    'timestamp': datetime.utcnow()
                 }
+                events_collection.insert_one(event_data)
                 
-                mongo_saved = save_event(mongo_event_data)
-                if mongo_saved:
-                    logger.info(f"Event saved to MongoDB: {event.id}")
-                else:
-                    logger.warning(f"Failed to save event to MongoDB: {event.id}")
-                
-                logger.info(f"Event created: {event.id}")
-                return Response({
-                    "status": "success", 
-                    "event_id": event.id,
-                    "session_id": str(session.session_id),
-                    "created_new_session": session.session_id != data.get('session_id'),
-                    "mongo_saved": mongo_saved
-                }, status=status.HTTP_201_CREATED)
+                return Response({'status': 'success'})
             except Exception as e:
-                logger.exception(f"Error creating event: {str(e)}")
-                return Response(
-                    {"error": f"Error creating event: {str(e)}"}, 
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+                logger.exception(f"Error processing event: {str(e)}")
+                return Response({'error': str(e)}, status=500)
         except Exception as e:
             logger.exception(f"Error in process_event: {str(e)}")
             return Response(

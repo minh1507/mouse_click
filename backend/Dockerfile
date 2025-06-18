@@ -2,11 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Cài đặt các phụ thuộc
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements files
 COPY requirements/ requirements/
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements/base.txt -r requirements/prod.txt
 
-# Sao chép mã nguồn
+# Copy project files
 COPY . .
 
 # Thiết lập biến môi trường
