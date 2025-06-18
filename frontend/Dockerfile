@@ -2,20 +2,18 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Sao chép package.json và package-lock.json
+# Install dependencies
 COPY package*.json ./
+RUN npm install
 
-# Cài đặt các phụ thuộc
-RUN npm ci
-
-# Sao chép mã nguồn
+# Copy source code
 COPY . .
 
-# Build ứng dụng
+# Build the application
 RUN npm run build
 
-# Mở port
+# Expose port
 EXPOSE 3000
 
-# Khởi động ứng dụng
-CMD ["npm", "start"] 
+# Start the application in development mode
+CMD ["npm", "run", "dev"] 

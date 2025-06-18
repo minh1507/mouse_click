@@ -62,10 +62,12 @@ def mongo_status(request):
         }, status=500)
 
 urlpatterns = [
-    path('events/', views.EventsView.as_view(), name='tracking-events'),
+    path('health/', views.health_check, name='health_check'),
+    path('events/', views.process_event, name='process_event'),
     path('sessions/', views.SessionView.as_view(), name='tracking-sessions-list'),
     path('sessions/<uuid:session_id>/', views.SessionView.as_view(), name='tracking-sessions-detail'),
     path('test/', test_view, name='tracking-test'),
     path('simple-event/', simple_event, name='tracking-simple-event'),
     path('mongo-status/', mongo_status, name='tracking-mongo-status'),
+    path('sessions/<str:session_id>/', views.update_session, name='update_session'),
 ] 

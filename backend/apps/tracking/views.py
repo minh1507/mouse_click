@@ -14,6 +14,8 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from .utils.mongo_client import get_collection, ensure_collections
 from datetime import datetime
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 from .models import Session, Event
 from utils.mongo_client import save_event, save_session, get_events_by_session
@@ -321,4 +323,163 @@ class SessionView(APIView):
         Return a paginated style `Response` object for the given output data.
         """
         assert self.paginator is not None
-        return self.paginator.get_paginated_response(data) 
+        return self.paginator.get_paginated_response(data)
+
+def health_check(request):
+    """Health check endpoint for Docker"""
+    return JsonResponse({"status": "healthy", "timestamp": datetime.utcnow().isoformat()})
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def process_event(request):
+    try:
+        # Log raw request body for debugging
+        logger.info(f"Raw request body: {request.body}")
+        
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {str(e)}")
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+            
+        logger.info(f"Parsed event data: {data}")
+        
+        # Ensure collections exist
+        ensure_collections()
+        
+        # Get collections
+        sessions_collection = get_collection('sessions')
+        events_collection = get_collection('events')
+        
+        # Validate and transform data
+        if isinstance(data, list):
+            if not data:
+                return JsonResponse({'error': 'Empty array'}, status=400)
+            data = data[0]  # Take first item if array
+            logger.info(f"Using first item from array: {data}")
+        
+        # Validate data
+        if not isinstance(data, dict):
+            logger.error(f"Invalid data type: {type(data)}")
+            return JsonResponse({'error': 'Invalid data format. Expected JSON object'}, status=400)
+            
+        # Get or create session
+        session_id = data.get('session_id')
+        if not session_id:
+            logger.error("Missing session_id in request")
+            return JsonResponse({'error': 'session_id is required'}, status=400)
+            
+        # Get event data
+        event_type = data.get('event_type')
+        event_data = data.get('data', {})
+        event_url = data.get('url', '')  # Get URL from event data
+        
+        if not event_type:
+            logger.error("Missing event_type in request")
+            return JsonResponse({'error': 'event_type is required'}, status=400)
+            
+        # Get or create session
+        session = sessions_collection.find_one({'session_id': session_id})
+        if not session:
+            session = {
+                'session_id': session_id,
+                'created_at': datetime.utcnow(),
+                'last_activity': datetime.utcnow(),
+                'user_agent': request.headers.get('User-Agent', ''),
+                'referer': request.headers.get('Referer', '')
+            }
+            try:
+                sessions_collection.insert_one(session)
+                logger.info(f"Created new session: {session_id}")
+            except Exception as e:
+                logger.error(f"Failed to save session to MongoDB: {session_id}")
+                logger.error(str(e))
+                return JsonResponse({'error': 'Failed to create session'}, status=500)
+        else:
+            # Update last activity
+            try:
+                sessions_collection.update_one(
+                    {'session_id': session_id},
+                    {'$set': {'last_activity': datetime.utcnow()}}
+                )
+            except Exception as e:
+                logger.error(f"Failed to update session activity: {session_id}")
+                logger.error(str(e))
+        
+        # Save event with URL from event data
+        try:
+            event = {
+                'session_id': session_id,
+                'event_type': event_type,
+                'data': event_data,
+                'timestamp': datetime.utcnow(),
+                'url': event_url,  # Use URL from event data
+                'path': request.path,
+                'method': request.method,
+                'user_agent': request.headers.get('User-Agent', '')
+            }
+            events_collection.insert_one(event)
+            logger.info(f"Saved event for session {session_id}: {event_type} at URL: {event_url}")
+        except Exception as e:
+            logger.error(f"Failed to save event: {session_id}")
+            logger.error(str(e))
+            return JsonResponse({'error': 'Failed to save event'}, status=500)
+        
+        return JsonResponse({'status': 'success'})
+        
+    except Exception as e:
+        logger.error(f"Error processing event: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["PATCH"])
+def update_session(request, session_id):
+    try:
+        # Log raw request body for debugging
+        logger.info(f"Raw request body for session {session_id}: {request.body}")
+        
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {str(e)}")
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+            
+        logger.info(f"Parsed update data: {data}")
+        
+        # Ensure collections exist
+        ensure_collections()
+        
+        # Get sessions collection
+        sessions_collection = get_collection('sessions')
+        
+        # Validate data
+        if not isinstance(data, dict):
+            logger.error(f"Invalid data type: {type(data)}")
+            return JsonResponse({'error': 'Invalid data format. Expected JSON object'}, status=400)
+        
+        # Update session
+        try:
+            update_data = {
+                'last_activity': datetime.utcnow(),
+                **data
+            }
+            result = sessions_collection.update_one(
+                {'session_id': session_id},
+                {'$set': update_data}
+            )
+            
+            if result.matched_count == 0:
+                logger.error(f"Session not found: {session_id}")
+                return JsonResponse({'error': 'Session not found'}, status=404)
+                
+            logger.info(f"Updated session: {session_id}")
+            return JsonResponse({'status': 'success'})
+            
+        except Exception as e:
+            logger.error(f"Failed to update session: {session_id}")
+            logger.error(str(e))
+            return JsonResponse({'error': 'Failed to update session'}, status=500)
+            
+    except Exception as e:
+        logger.error(f"Error updating session: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500) 

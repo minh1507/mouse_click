@@ -1,68 +1,94 @@
 version: '3.8'
 
 services:
-  backend:
-    build: ./backend
-    container_name: mouse-tracker-backend
-    restart: always
-    volumes:
-      - ./backend:/app
-      - backend_static:/app/static
-    ports:
-      - "8000:8000"
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings
-      - MONGODB_URI=mongodb://mongo:27017/mouse_tracker
-      - REDIS_URL=redis://redis:6379/0
-      - ALLOWED_HOSTS=localhost,127.0.0.1,backend,frontend
-    depends_on:
-      - mongo
-      - redis
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/tracking/test/"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: mouse-tracker-frontend
     restart: always
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend-nginx:80/api
     volumes:
       - ./frontend:/app
       - /app/node_modules
-      - /app/.next
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+    networks:
+      - mouse-tracker-network
     depends_on:
       backend:
         condition: service_healthy
 
-  mongo:
-    image: mongo:6
-    container_name: mouse-tracker-mongo
+  frontend-nginx:
+    build:
+      context: ./frontend/nginx
+      dockerfile: Dockerfile
+    container_name: mouse-tracker-frontend-nginx
     restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - frontend
+    networks:
+      - mouse-tracker-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mouse-tracker-backend
+    restart: always
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=your-secret-key-here
+      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1] backend backend-nginx frontend frontend-nginx
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000,http://localhost,http://frontend-nginx:80
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - MONGODB_DB=mouse_tracker
     volumes:
-      - mongo_data:/data/db
+      - ./backend:/app
+      - backend_static:/app/staticfiles
+      - backend_media:/app/media
+    networks:
+      - mouse-tracker-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/tracking/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  backend-nginx:
+    build:
+      context: ./backend/nginx
+      dockerfile: Dockerfile
+    container_name: mouse-tracker-backend-nginx
+    restart: always
+    ports:
+      - "8000:80"
+    volumes:
+      - backend_static:/app/staticfiles:ro
+      - backend_media:/app/media:ro
+    depends_on:
+      - backend
+    networks:
+      - mouse-tracker-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mouse-tracker-mongodb
+    restart: always
     ports:
       - "27017:27017"
-    command: mongod --bind_ip_all
-    environment:
-      - MONGO_INITDB_DATABASE=mouse_tracker
-
-  redis:
-    image: redis:7-alpine
-    container_name: mouse-tracker-redis
-    restart: always
-    ports:
-      - "6379:6379"
     volumes:
-      - redis_data:/data
+      - mongodb_data:/data/db
+    networks:
+      - mouse-tracker-network
+
+networks:
+  mouse-tracker-network:
+    driver: bridge
 
 volumes:
-  mongo_data:
-  redis_data:
-  backend_static: 
+  mongodb_data:
+  backend_static:
+  backend_media: 
